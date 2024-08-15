@@ -1,31 +1,21 @@
 #nullable disable
-using UnityEngine;
+using System;
 using Unity.Profiling;
-using UltimateUI.MVVM.Views;
 using UltimateUI.MVVM.ViewModels;
 
 using Object = UnityEngine.Object;
 
 // ReSharper disable once CheckNamespace
-namespace UltimateUI.MVVM.Unity.Views
+namespace UltimateUI.MVVM.Views
 {
-    public abstract class MonoView : MonoBehaviour, IView
+    public abstract class View : IView, IDisposable
     {
 #if !ULTIMATE_UI_MVVM_UNITY_PROFILER_DISABLED
-        private static readonly ProfilerMarker _initializeMarker = new("MonoView.Initialize");
-        private static readonly ProfilerMarker _deinitializationMarker = new("MonoView.Deinitialization");
+        private static readonly ProfilerMarker _initializeMarker = new("View.Initialize");
+        private static readonly ProfilerMarker _deinitializationMarker = new("View.Deinitialization");
 #endif
         private IViewModel _viewModel;
-
-        protected virtual void OnValidate() =>
-            ViewUtility.ValidateBinders(this);
-
-        protected virtual void OnDestroy()
-        {
-            if (_viewModel == null) return;
-            Deinitialization(_viewModel);
-        }
-
+        
         public void Initialize(IViewModel viewModel)
         {
 #if !ULTIMATE_UI_MVVM_UNITY_PROFILER_DISABLED
@@ -36,7 +26,7 @@ namespace UltimateUI.MVVM.Unity.Views
                 InitializeIternal(viewModel);
             }
         }
-
+        
         protected abstract void InitializeIternal(IViewModel viewModel);
 
         public void Deinitialization(IViewModel viewModel)
@@ -51,7 +41,13 @@ namespace UltimateUI.MVVM.Unity.Views
         }
         
         protected abstract void DeinitializationIternal(IViewModel viewModel);
-
+        
+        public virtual void Dispose()
+        {
+            if (_viewModel == null) return;
+            Deinitialization(_viewModel);
+        }
+        
         protected static void BindSafely<T>(T binder, IViewModel viewModel, string id)
             where T : Object, IBinder
         {

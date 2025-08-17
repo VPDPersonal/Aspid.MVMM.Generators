@@ -2,6 +2,7 @@ using System.Threading;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Aspid.Generator.Helpers;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Aspid.MVVM.Generators.ViewModels.Body;
@@ -35,7 +36,8 @@ public sealed class ViewModelGenerator : IIncrementalGenerator
             && !candidate.Modifiers.Any(SyntaxKind.StaticKeyword);
     }
     
-    private static FoundForGenerator<ViewModelData> FindViewModels(GeneratorAttributeSyntaxContext context,
+    private static FoundForGenerator<ViewModelData> FindViewModels(
+        GeneratorAttributeSyntaxContext context,
         CancellationToken cancellationToken)
     {
         if (context.TargetSymbol is not INamedTypeSymbol symbol) return default;
@@ -47,11 +49,17 @@ public sealed class ViewModelGenerator : IIncrementalGenerator
             ? Inheritor.Inheritor
             : Inheritor.None;
 
+        var properties = symbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .ToImmutableArray();
+
         var bindableMembers = BindableMembersFactory.Create(symbol);
         var memberByGroups = IdLengthMemberGroup.Create(bindableMembers);
+        var bindableProperties = BindablePropertyFactory.Create(candidate, properties);
         var customViewModelInterfaces = CustomViewModelInterfacesFactory.Create(symbol);
         
-        var data = new ViewModelData(inheritor, symbol, candidate, bindableMembers, memberByGroups, customViewModelInterfaces);
+        var data = new ViewModelData(inheritor, symbol, candidate, bindableMembers, memberByGroups, bindableProperties, customViewModelInterfaces);
         return new FoundForGenerator<ViewModelData>(data);
     }
     
@@ -64,6 +72,7 @@ public sealed class ViewModelGenerator : IIncrementalGenerator
         PropertiesBody.Generate(@namespace, data, declarationText, context);
         RelayCommandBody.Generate(@namespace, data, declarationText, context);
         BindableMembersBody.Generate(@namespace, data, declarationText, context);
+        OnPropertyChangedBody.Generate(@namespace, data, declarationText, context);
         FindBindableMembersBody.Generate(@namespace, data, declarationText, context);
     }
 }

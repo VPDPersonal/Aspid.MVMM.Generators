@@ -25,4 +25,5 @@ public static partial class Classes
     
     public static readonly TypeText MethodImplOptions = new("MethodImplOptions", Namespaces.System_Runtime_CompilerServices);
     public static readonly AttributeText MethodImplAttribute = new("MethodImpl", Namespaces.System_Runtime_CompilerServices);
+    public static readonly AttributeText CallerMemberNameAttribute = new("CallerMemberName", Namespaces.System_Runtime_CompilerServices);
 }
